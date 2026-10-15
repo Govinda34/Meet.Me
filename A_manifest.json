@@ -1,0 +1,20 @@
+{
+  "name": "Live Meet Admin",
+  "short_name": "Meet Admin",
+  "start_url": "/Meet.Me/AtoG.html",
+  "display": "standalone",
+  "background_color": "#efeae2",
+  "theme_color": "#005c4b",
+  "icons": [
+    {
+      "src": "/Meet.Me/Kiconn-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Meet.Me/Kiconn-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
