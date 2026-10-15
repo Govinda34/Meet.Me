@@ -1,0 +1,20 @@
+{
+  "name": "Live Meet User",
+  "short_name": "Meet User",
+  "start_url": "/Meet.Me/GtoA.html",
+  "display": "standalone",
+  "background_color": "#efeae2",
+  "theme_color": "#00a884",
+  "icons": [
+    {
+      "src": "/Meet.Me/Kiconn-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Meet.Me/Kiconn-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
