@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Meet - Notification Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #efeae2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        h2 {
+            color: #00a884;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background-color: #00a884;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🔔 नोटिफिकेशन सेटअप</h2>
+        <p>लाइव चैट अलर्ट प्राप्त करने के लिए अनुमति दें:</p>
+        <button class="btn" onclick="requestNotificationPermission()">नोटिफिकेशन एनेबल करें</button>
+        <div id="status"></div>
+    </div>
+
+    <!-- Firebase SDK Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "achait.firebaseapp.com",
+            databaseURL: "https://achait-default-rtdb.firebaseio.com",
+            projectId: "achait",
+            storageBucket: "achait.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
+        const db = firebase.database();
+
+        function requestNotificationPermission() {
+            const statusDiv = document.getElementById("status");
+            
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    statusDiv.innerText = "अनुमति मिल गई है, टोकन जनरेट हो रहा है...";
+                    
+                    messaging.getToken({ vapidKey: "YOUR_VAPID_KEY_HERE" }).then((currentToken) => {
+                        if (currentToken) {
+                            // टोकन को फायरबेस डेटाबेस में सेव करें
+                            db.ref('fcm_tokens/').push({
+                                token: currentToken,
+                                timestamp: Date.now()
+                            });
+                            statusDiv.innerText = "सफलतापूर्वक नोटिफिकेशन चालू हो गया है!";
+                        } else {
+                            statusDiv.innerText = "टोकन नहीं मिल पाया।";
+                        }
+                    }).catch((err) => {
+                        statusDiv.innerText = "टोकन प्राप्त करने में त्रुटि: " + err;
+                    });
+                } else {
+                    statusDiv.innerText = "नोटिफिकेशन की अनुमति अस्वीकार कर दी गई है।";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
