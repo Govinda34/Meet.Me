@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Meet Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #efeae2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            background-color: #00a884;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .chat-container {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message {
+            max-width: 75%;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+        .incoming {
+            background-color: white;
+            align-self: flex-start;
+        }
+        .outgoing {
+            background-color: #d9fdd3;
+            align-self: flex-end;
+        }
+        .input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #f0f2f5;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+            padding-left: 15px;
+        }
+        button {
+            background-color: #00a884;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-left: 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">Live 💬 Meet</div>
+
+    <div class="chat-container" id="chatBox">
+        <!-- Messages will load here dynamically -->
+    </div>
+
+    <div class="input-container">
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <!-- Firebase SDK Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <script>
+        // Aapki Firebase Configuration (Yahan apni Firebase ki details dalein)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "achait.firebaseapp.com",
+            databaseURL: "https://achait-default-rtdb.firebaseio.com",
+            projectId: "achait",
+            storageBucket: "achait.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const chatBox = document.getElementById("chatBox");
+        const messageInput = document.getElementById("messageInput");
+
+        // Messages ko Realtime load karne ka function
+        db.ref('messages/').on('child_added', (snapshot) => {
+            const msgData = snapshot.val();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${msgData.sender === 'user' ? 'outgoing' : 'incoming'}`;
+            messageDiv.innerText = msgData.text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        // Message bhejne ka function
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text === "") return;
+
+            db.ref('messages/').push({
+                text: text,
+                sender: 'user',
+                timestamp: Date.now()
+            });
+
+            messageInput.value = "";
+        }
+
+        // Enter key dabane par message send ho jaye
+        messageInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
