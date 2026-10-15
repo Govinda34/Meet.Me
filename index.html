@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Meet - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #efeae2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        h2 {
+            color: #00a884;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background-color: #00a884;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .btn.admin {
+            background-color: #005c4b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Live 💬 Meet</h2>
+        <p>कृपया अपना पैनल चुनें:</p>
+        <a href="GtoA.html" class="btn">User Panel (GtoA)</a>
+        <a href="AtoG.html" class="btn admin">Admin Panel (AtoG)</a>
+    </div>
+
+    <script>
+        // Service Worker रजिस्टर करने का कोड
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered successfully!', reg))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
