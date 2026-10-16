@@ -1,6 +1,6 @@
 {
-  "name": "Live Meet User",
-  "short_name": "Meet User",
+  "name": "Meet Me",
+  "short_name": "GtoA",
   "start_url": "/Meet.Me/GtoA.html",
   "display": "standalone",
   "background_color": "#efeae2",
