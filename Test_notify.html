@@ -62,23 +62,14 @@
         <div id="status"></div>
     </div>
 
-    <!-- Firebase SDK Scripts -->
+    <!-- Firebase SDK & Config Scripts -->
     <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "achait.firebaseapp.com",
-            databaseURL: "https://achait-default-rtdb.firebaseio.com",
-            projectId: "achait",
-            storageBucket: "achait.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
+        // config.js में मौजूद firebaseConfig का उपयोग किया जा रहा है
         firebase.initializeApp(firebaseConfig);
         const messaging = firebase.messaging();
         const db = firebase.database();
@@ -90,7 +81,8 @@
                 if (permission === 'granted') {
                     statusDiv.innerText = "अनुमति मिल गई है, टोकन जनरेट हो रहा है...";
                     
-                    messaging.getToken({ vapidKey: "YOUR_VAPID_KEY_HERE" }).then((currentToken) => {
+                    // config.js से सीधे VAPID_KEY का उपयोग
+                    messaging.getToken({ vapidKey: VAPID_KEY }).then((currentToken) => {
                         if (currentToken) {
                             // टोकन को फायरबेस डेटाबेस में सेव करें
                             db.ref('fcm_tokens/').push({
