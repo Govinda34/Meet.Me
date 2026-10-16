@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Meet - Admin</title>
+    <title>Live Meet</title>
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="A_manifest.json">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -82,33 +84,23 @@
         <button onclick="sendMessage()">भेजें</button>
     </div>
 
-    <!-- Firebase SDK Scripts -->
+    <!-- Firebase SDK & Config Scripts -->
+    <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <script>
-        const firebaseConfig = {
-  apiKey: "AIzaSyBvtN9cxTACg0lbzdJu_5Vwb0r8gt89jF8",
-  authDomain: "achait.firebaseapp.com",
-  databaseURL: "https://achait-default-rtdb.firebaseio.com",
-  projectId: "achait",
-  storageBucket: "achait.firebasestorage.app",
-  messagingSenderId: "970610938948",
-  appId: "1:970610938948:web:521e3b5e5f71b54a245811",
-  measurementId: "G-VK9KEESHRJ"
-};
-
+        // config.js से firebaseConfig का उपयोग
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const chatBox = document.getElementById("chatBox");
         const messageInput = document.getElementById("messageInput");
 
-        // संदेश लोड करने का लॉजिक (एडमिन के लिए sender 'admin' रहेगा)
+        // संदेश लोड करने का लॉजिक
         db.ref('messages/').on('child_added', (snapshot) => {
             const msgData = snapshot.val();
             const messageDiv = document.createElement('div');
-            // यदि भेजने वाला admin है तो outgoing, अन्यथा incoming
             messageDiv.className = `message ${msgData.sender === 'admin' ? 'outgoing' : 'incoming'}`;
             messageDiv.innerText = msgData.text;
             chatBox.appendChild(messageDiv);
@@ -119,6 +111,7 @@
             const text = messageInput.value.trim();
             if (text === "") return;
 
+            // डेटाबेस में मैसेज सेव करें
             db.ref('messages/').push({
                 text: text,
                 sender: 'admin',
@@ -133,6 +126,13 @@
                 sendMessage();
             }
         });
+
+        // सर्विस वर्कर रजिस्टर करें ताकि PWA सपोर्ट मिले
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch((err) => console.log('SW Registration Failed', err));
+        }
     </script>
 </body>
 </html>
