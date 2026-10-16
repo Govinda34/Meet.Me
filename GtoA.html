@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Meet Chat</title>
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="G_manifest.json">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -84,23 +86,13 @@
         <button onclick="sendMessage()">Send</button>
     </div>
 
-    <!-- Firebase SDK Scripts -->
+    <!-- Firebase SDK & Config Scripts -->
+    <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <script>
-        // Aapki Firebase Configuration (Yahan apni Firebase ki details dalein)
-        const firebaseConfig = {
-  apiKey: "AIzaSyBvtN9cxTACg0lbzdJu_5Vwb0r8gt89jF8",
-  authDomain: "achait.firebaseapp.com",
-  databaseURL: "https://achait-default-rtdb.firebaseio.com",
-  projectId: "achait",
-  storageBucket: "achait.firebasestorage.app",
-  messagingSenderId: "970610938948",
-  appId: "1:970610938948:web:521e3b5e5f71b54a245811",
-  measurementId: "G-VK9KEESHRJ"
-};
-
+        // config.js से firebaseConfig का उपयोग किया जा रहा है
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -137,6 +129,13 @@
                 sendMessage();
             }
         });
+
+        // Service Worker रजिस्टर करें ताकि PWA सपोर्ट मिले
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch((err) => console.log('SW Registration Failed', err));
+        }
     </script>
 </body>
 </html>
