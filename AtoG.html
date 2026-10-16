@@ -118,6 +118,14 @@
                 timestamp: Date.now()
             });
 
+            // नोटिफिकेशन ट्रिगर करने के लिए डेटा सेव करें
+            db.ref('notifications/').push({
+                title: "Live Meet - नया संदेश",
+                body: text,
+                url: "/Meet.Me/GtoA.html",
+                timestamp: Date.now()
+            });
+
             messageInput.value = "";
         }
 
