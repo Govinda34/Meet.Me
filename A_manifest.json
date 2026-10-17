@@ -1,18 +1,18 @@
 {
   "name": "Meet Me",
   "short_name": "AtoG",
-  "start_url": "/Meet.Me/AtoG.html",
+  "start_url": "./AtoG.html",
   "display": "standalone",
   "background_color": "#efeae2",
   "theme_color": "#005c4b",
   "icons": [
     {
-      "src": "/Meet.Me/Riconn-192.png",
+      "src": "./Riconn-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/Meet.Me/Riconn-512.png",
+      "src": "./Riconn-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
