@@ -2,11 +2,14 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Live Meet Chat</title>
-    <!-- PWA Manifest Link -->
-    <link rel="manifest" href="G_manifest.json">
+    <link rel="manifest" href="./G_manifest.json">
+    <link rel="icon" href="./Kicon-192.png">
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
             background-color: #efeae2;
@@ -14,149 +17,288 @@
             padding: 0;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
         }
+        /* Sticky Top Header */
         .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
             background-color: #00a884;
             color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 18px;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .header-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .header-title {
+            font-size: 17px;
             font-weight: bold;
         }
+        .status-text {
+            font-size: 12px;
+            color: #e0f2f1;
+            margin-top: 2px;
+        }
+        .notify-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        /* Scrollable Chat Area */
         .chat-container {
             flex: 1;
             padding: 15px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
         .message {
             max-width: 75%;
-            padding: 10px;
+            padding: 8px 12px;
             border-radius: 8px;
             font-size: 14px;
             word-wrap: break-word;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .incoming {
             background-color: white;
             align-self: flex-start;
+            border-top-left-radius: 0;
         }
         .outgoing {
             background-color: #d9fdd3;
             align-self: flex-end;
+            border-top-right-radius: 0;
         }
+        .msg-time {
+            display: block;
+            font-size: 10px;
+            color: #667781;
+            text-align: right;
+            margin-top: 4px;
+        }
+        /* Sticky Bottom Input Box */
         .input-container {
+            position: sticky;
+            bottom: 0;
+            z-index: 100;
             display: flex;
             padding: 10px;
             background-color: #f0f2f5;
+            align-items: center;
+            box-shadow: 0 -1px 4px rgba(0,0,0,0.08);
         }
         input {
             flex: 1;
-            padding: 10px;
+            padding: 12px 15px;
             border: none;
-            border-radius: 20px;
+            border-radius: 24px;
             outline: none;
-            font-size: 14px;
-            padding-left: 15px;
+            font-size: 15px;
+            background: white;
         }
-        button {
+        .send-btn {
             background-color: #00a884;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             margin-left: 8px;
-            border-radius: 20px;
+            border-radius: 24px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">Live 💬 Meet</div>
-
-    <div class="chat-container" id="chatBox">
-        <!-- Messages will load here dynamically -->
+    <div class="header">
+        <div class="header-info">
+            <span class="header-title">Live 💬 Meet</span>
+            <span class="status-text" id="adminStatus">Checking status...</span>
+        </div>
+        <button class="notify-btn" id="notifyBtn" onclick="enableNotifications()">🔔 Alert On</button>
     </div>
+
+    <div class="chat-container" id="chatBox"></div>
 
     <div class="input-container">
-        <input type="text" id="messageInput" placeholder="Type a message...">
-        <button onclick="sendMessage()">Send</button>
+        <input type="text" id="messageInput" placeholder="Message likhein..." autocomplete="off">
+        <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
 
-    <!-- Firebase SDK & Config Scripts -->
-    <script src="config.js"></script>
+    <!-- Firebase SDK & Config -->
+    <script src="./config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <script>
-        // config.js से firebaseConfig का उपयोग किया जा रहा है
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const chatBox = document.getElementById("chatBox");
         const messageInput = document.getElementById("messageInput");
+        const adminStatus = document.getElementById("adminStatus");
+        const notifyBtn = document.getElementById("notifyBtn");
 
-        // Messages ko Realtime load karne ka function
+        const myRole = "user";
+        const otherRole = "admin";
+        const pageLoadTime = Date.now();
+        let swRegistration = null;
+        let typingTimeout = null;
+
+        // 1. Service Worker Register (Relative Path './sw.js' jisse 404 error na aaye)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then((reg) => {
+                    swRegistration = reg;
+                    console.log('SW Registered');
+                })
+                .catch((err) => console.log('SW Error:', err));
+        }
+
+        // Notification button status check
+        if ('Notification' in window && Notification.permission === 'granted') {
+            notifyBtn.style.display = 'none';
+        }
+
+        function enableNotifications() {
+            if (!('Notification' in window)) {
+                alert("Aapka browser notification support nahi karta.");
+                return;
+            }
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    notifyBtn.style.display = 'none';
+                    showLocalNotification("Live Meet", "Notifications chalu ho gaye hain!");
+                }
+            });
+        }
+
+        // 2. Browser Push Notification dikhane ka function
+        function showLocalNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const options = {
+                    body: body,
+                    icon: './Kicon-192.png',
+                    badge: './Kicon-192.png',
+                    vibrate: [200, 100, 200],
+                    tag: 'chat-msg',
+                    renotify: true,
+                    data: { url: './GtoA.html' }
+                };
+                if (swRegistration) {
+                    swRegistration.showNotification(title, options);
+                } else {
+                    new Notification(title, options);
+                }
+            }
+        }
+
+        // 3. Apना Online Status Set Karna (online.php ka replacement)
+        const myOnlineRef = db.ref('status/' + myRole);
+        db.ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === true) {
+                myOnlineRef.onDisconnect().set({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+                myOnlineRef.set({ online: true, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+            }
+        });
+
+        // 4. Admin ka Online aur Typing Status Dekhna (online_status.php & typing_status.php ka replacement)
+        let isOtherOnline = false;
+        let isOtherTyping = false;
+
+        function updateHeaderStatus() {
+            if (isOtherTyping) {
+                adminStatus.innerText = "typing...";
+                adminStatus.style.color = "#ffeb3b";
+            } else if (isOtherOnline) {
+                adminStatus.innerText = "● Online";
+                adminStatus.style.color = "#d9fdd3";
+            } else {
+                adminStatus.innerText = "Offline";
+                adminStatus.style.color = "#e0f2f1";
+            }
+        }
+
+        db.ref('status/' + otherRole).on('value', (snap) => {
+            const data = snap.val();
+            isOtherOnline = data ? data.online : false;
+            updateHeaderStatus();
+        });
+
+        db.ref('typing/' + otherRole).on('value', (snap) => {
+            isOtherTyping = snap.val() === true;
+            updateHeaderStatus();
+        });
+
+        // 5. Typing Indicator Bhejna (typing.php ka replacement)
+        messageInput.addEventListener('input', () => {
+            db.ref('typing/' + myRole).set(true);
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                db.ref('typing/' + myRole).set(false);
+            }, 1500);
+        });
+
+        // 6. Messages Load Karna + Naye Message par Notification Dena
         db.ref('messages/').on('child_added', (snapshot) => {
             const msgData = snapshot.val();
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${msgData.sender === 'user' ? 'outgoing' : 'incoming'}`;
-            messageDiv.innerText = msgData.text;
+            messageDiv.className = `message ${msgData.sender === myRole ? 'outgoing' : 'incoming'}`;
+
+            const timeStr = msgData.timestamp 
+                ? new Date(msgData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                : '';
+
+            messageDiv.innerHTML = `<span>${msgData.text}</span><span class="msg-time">${timeStr}</span>`;
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Agar message Admin ne bheja hai aur naya hai, toh Push Notification bhejo
+            if (msgData.sender === otherRole && msgData.timestamp > pageLoadTime) {
+                if (document.hidden || !document.hasFocus()) {
+                    showLocalNotification("Admin का नया संदेश", msgData.text);
+                } else {
+                    showLocalNotification("नया संदेश", msgData.text);
+                }
+            }
         });
 
-        // Message bhejne ka function
+        // 7. Message Send Karne ka Function
         function sendMessage() {
             const text = messageInput.value.trim();
             if (text === "") return;
 
-            // 1. डेटाबेस में चैट मैसेज सेव करें
             db.ref('messages/').push({
                 text: text,
-                sender: 'user',
+                sender: myRole,
                 timestamp: Date.now()
             });
 
-            // 2. नोटिफिकेशन ट्रिगर करने के लिए डेटा सेव करें
-            db.ref('notifications/').push({
-                title: "Live Meet - नया संदेश (User)",
-                body: text,
-                url: "/Meet.Me/AtoG.html",
-                timestamp: Date.now()
-            });
-
+            db.ref('typing/' + myRole).set(false);
             messageInput.value = "";
+            messageInput.focus();
         }
 
-        // Enter key dabane par message send ho jaye
         messageInput.addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 sendMessage();
             }
         });
-
-        // Service Worker रजिस्टर करें ताकि PWA सपोर्ट मिले
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log('Service Worker Registered'))
-                .catch((err) => console.log('SW Registration Failed', err));
-        }
-
-        if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/Meet.Me/firebase-messaging-sw.js')
-        .then((registration) => {
-            console.log('Service Worker Registered with scope:', registration.scope);
-            // इसके बाद messaging.getToken() या अन्य कोड यहाँ लिख सकते हैं
-        })
-        .catch((err) => {
-            console.log('SW Registration Failed', err);
-        });
-}
-
     </script>
 </body>
 </html>
