@@ -50,6 +50,7 @@
             margin-top: 15px;
             font-size: 14px;
             color: #333;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -63,15 +64,14 @@
     </div>
 
     <!-- Firebase SDK & Config Scripts -->
-    <script src="config.js"></script>
+    <script src="./config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <script>
-        // config.js में मौजूद firebaseConfig का उपयोग किया जा रहा है
+        // Firebase ऐप इनिशियलाइज़ करें
         firebase.initializeApp(firebaseConfig);
-        const messaging = firebase.messaging();
         const db = firebase.database();
 
         function requestNotificationPermission() {
@@ -79,23 +79,41 @@
             
             Notification.requestPermission().then((permission) => {
                 if (permission === 'granted') {
-                    statusDiv.innerText = "अनुमति मिल गई है, टोकन जनरेट हो रहा है...";
+                    statusDiv.innerText = "अनुमति मिल गई है, सर्विस वर्कर रजिस्टर हो रहा है...";
                     
-                    // config.js से सीधे VAPID_KEY का उपयोग
-                    messaging.getToken({ vapidKey: VAPID_KEY }).then((currentToken) => {
-                        if (currentToken) {
-                            // टोकन को फायरबेस डेटाबेस में सेव करें
-                            db.ref('fcm_tokens/').push({
-                                token: currentToken,
-                                timestamp: Date.now()
+                    // ब्राउज़र में सर्विस वर्कर को मैन्युअल रूप से रजिस्टर करें ताकि 404 एरर न आए
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('./firebase-messaging-sw.js')
+                            .then((registration) => {
+                                statusDiv.innerText = "टोकन जनरेट हो रहा है...";
+                                const messaging = firebase.messaging();
+                                
+                                // रजिस्टर किए गए सर्विस वर्कर का उपयोग करके FCM टोकन प्राप्त करें
+                                return messaging.getToken({ 
+                                    vapidKey: VAPID_KEY,
+                                    serviceWorkerRegistration: registration 
+                                });
+                            })
+                            .then((currentToken) => {
+                                if (currentToken) {
+                                    // टोकन को फायरबेस डेटाबेस में सेव करें
+                                    db.ref('fcm_tokens/').push({
+                                        token: currentToken,
+                                        timestamp: Date.now()
+                                    });
+                                    statusDiv.innerText = "सफलतापूर्वक नोटिफिकेशन चालू हो गया है!";
+                                    console.log("FCM Token:", currentToken);
+                                } else {
+                                    statusDiv.innerText = "टोकन नहीं मिल पाया।";
+                                }
+                            })
+                            .catch((err) => {
+                                statusDiv.innerText = "त्रुटि: " + err.message;
+                                console.error(err);
                             });
-                            statusDiv.innerText = "सफलतापूर्वक नोटिफिकेशन चालू हो गया है!";
-                        } else {
-                            statusDiv.innerText = "टोकन नहीं मिल पाया।";
-                        }
-                    }).catch((err) => {
-                        statusDiv.innerText = "टोकन प्राप्त करने में त्रुटि: " + err;
-                    });
+                    } else {
+                        statusDiv.innerText = "आपका ब्राउज़र सर्विस वर्कर सपोर्ट नहीं करता।";
+                    }
                 } else {
                     statusDiv.innerText = "नोटिफिकेशन की अनुमति अस्वीकार कर दी गई है।";
                 }
