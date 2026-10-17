@@ -141,6 +141,18 @@
                 .then(() => console.log('Service Worker Registered'))
                 .catch((err) => console.log('SW Registration Failed', err));
         }
+
+        if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/Meet.Me/firebase-messaging-sw.js')
+        .then((registration) => {
+            console.log('Service Worker Registered with scope:', registration.scope);
+            // इसके बाद messaging.getToken() या अन्य कोड यहाँ लिख सकते हैं
+        })
+        .catch((err) => {
+            console.log('SW Registration Failed', err);
+        });
+        }
+        
     </script>
 </body>
 </html>
