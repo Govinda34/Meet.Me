@@ -114,9 +114,18 @@
             const text = messageInput.value.trim();
             if (text === "") return;
 
+            // 1. डेटाबेस में चैट मैसेज सेव करें
             db.ref('messages/').push({
                 text: text,
                 sender: 'user',
+                timestamp: Date.now()
+            });
+
+            // 2. नोटिफिकेशन ट्रिगर करने के लिए डेटा सेव करें
+            db.ref('notifications/').push({
+                title: "Live Meet - नया संदेश (User)",
+                body: text,
+                url: "/Meet.Me/AtoG.html",
                 timestamp: Date.now()
             });
 
