@@ -1,13 +1,18 @@
-const CACHE_NAME = "achait-app-v1"; // 👈 [महत्वपूर्ण] जब भी आप कोई नया बदलाव करें, तो v1 को बदलकर v2, v3 कर दें
+const CACHE_NAME = "achait-app-v2"; // जब भी कोई नया बदलाव करें, तो v2 को बदलकर v3, v4 कर दें
 
 const APP_FILES = [
-    "/Meet.Me/",
-    "/Meet.Me/GtoA.html",
-    "/Meet.Me/AtoG.html",
-    "/Meet.Me/G_manifest.json",
-    "/Meet.Me/A_manifest.json"
+    "./",
+    "./index.html",
+    "./GtoA.html",
+    "./AtoG.html",
+    "./G_manifest.json",
+    "./A_manifest.json",
+    "./config.js",
+    "./Kiconn-192.png",
+    "./Riconn-192.png"
 ];
 
+// 1. Install Event: फाइलों को कैश करना और तुरंत एक्टिव करना
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -16,7 +21,7 @@ self.addEventListener('install', event => {
     );
 });
 
-// पुराना कैश तुरंत डिलीट करने का लॉजिक
+// 2. Activate Event: पुराना कैश तुरंत डिलीट करना
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -25,16 +30,23 @@ self.addEventListener('activate', event => {
                     .filter(name => name !== CACHE_NAME)
                     .map(name => caches.delete(name))
             );
-        }).then(() => clients.claim())
+        }).then(() => self.clients.claim())
     );
 });
 
-// नेटवर्क-फर्स्ट स्ट्रेटजी (ताकि अपडेटेड पेज तुरंत दिखाई दे)
+// 3. Fetch Event: नेटवर्क-फर्स्ट स्ट्रेटजी (Firebase डेटा को ब्लॉक किए बिना)
 self.addEventListener('fetch', event => {
     if (event.request.method !== "GET") {
         return;
     }
 
+    // Firebase और Google APIs के लाइव डेटा को कैश न करें
+    const reqUrl = event.request.url;
+    if (reqUrl.includes("firebaseio.com") || reqUrl.includes("googleapis.com") || reqUrl.includes("gstatic.com")) {
+        return;
+    }
+
+    // HTML पेजेस के लिए नेटवर्क-फर्स्ट (ताकि नया अपडेट तुरंत दिखे)
     if (event.request.headers.get("accept") && event.request.headers.get("accept").includes("text/html")) {
         event.respondWith(
             fetch(event.request)
@@ -49,6 +61,7 @@ self.addEventListener('fetch', event => {
         return;
     }
 
+    // बाकी इमेज और स्टैटिक फाइलों के लिए कैश-फर्स्ट
     event.respondWith(
         caches.match(event.request)
             .then(cachedResponse => {
@@ -68,7 +81,7 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// पुश नोटिफिकेशन हैंडलर
+// 4. Push Event: बैकग्राउंड पुश नोटिफिकेशन हैंडलर
 self.addEventListener('push', event => {
     let data = {};
 
@@ -87,10 +100,13 @@ self.addEventListener('push', event => {
 
     const options = {
         body: data.notification?.body || data.body || "संदेश देखने के लिए क्लिक करें",
-        icon: "/Meet.Me/Kiconn-192.png",
-        badge: "/Meet.Me/Kiconn-192.png",
+        icon: "./Kiconn-192.png",
+        badge: "./Kiconn-192.png",
+        vibrate: [200, 100, 200],
+        tag: "chat-msg",
+        renotify: true,
         data: {
-            url: data.data?.url || data.url || "/Meet.Me/GtoA.html"
+            url: data.data?.url || data.url || "./GtoA.html"
         }
     };
 
@@ -99,10 +115,11 @@ self.addEventListener('push', event => {
     );
 });
 
+// 5. Notification Click Event: नोटिफिकेशन पर क्लिक करने पर चैट पेज खोलना
 self.addEventListener('notificationclick', event => {
     event.notification.close();
 
-    const url = event.notification.data.url || "/Meet.Me/GtoA.html";
+    const targetUrl = event.notification.data?.url || "./GtoA.html";
 
     event.waitUntil(
         clients.matchAll({
@@ -110,12 +127,13 @@ self.addEventListener('notificationclick', event => {
             includeUncontrolled: true
         }).then(windowClients => {
             for (const client of windowClients) {
-                if ("focus" in client) {
-                    client.navigate(url);
+                if (client.url.includes(targetUrl.replace('./', '')) && "focus" in client) {
                     return client.focus();
                 }
             }
-            return clients.openWindow(url);
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
         })
     );
 });
