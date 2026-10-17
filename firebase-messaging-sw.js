@@ -2,17 +2,11 @@
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js');
 
-// Firebase इनिशियलाइज़ेशन (अपनी प्रोजेक्ट डिटेल्स यहाँ भरें)
-firebase.initializeApp({
-  apiKey: "AIzaSyBvtN9cxTACg0lbzdJu_5Vwb0r8gt89jF8",
-  authDomain: "achait.firebaseapp.com",
-  databaseURL: "https://achait-default-rtdb.firebaseio.com",
-  projectId: "achait",
-  storageBucket: "achait.firebasestorage.app",
-  messagingSenderId: "970610938948",
-  appId: "1:970610938948:web:521e3b5e5f71b54a245811",
-  measurementId: "G-VK9KEESHRJ"
-});
+// config.js को इम्पोर्ट करें ताकि बार-बार कॉन्फ़िगरेशन न लिखना पड़े
+importScripts('./config.js');
+
+// Firebase इनिशियलाइज़ेशन (config.js के firebaseConfig का उपयोग)
+firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
@@ -21,25 +15,28 @@ messaging.onBackgroundMessage((payload) => {
     const notificationTitle = payload.notification?.title || "नया संदेश";
     const notificationOptions = {
         body: payload.notification?.body || "आपके लिए नया संदेश आया है",
-        icon: "/Meet.Me/Kiconn-192.png",
-        badge: "/Meet.Me/Kiconn-192.png",
+        icon: "./Kiconn-192.png",
+        badge: "./Kiconn-192.png",
+        vibrate: [200, 100, 200],
+        tag: "chat-msg",
+        renotify: true,
         data: {
-            url: payload.data?.url || "/Meet.Me/GtoA.html"
+            url: payload.data?.url || "./GtoA.html"
         }
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// नोटिफिकेशन पर क्लिक करने पर सही पेज पर रीडायरेक्ट करना
+// नोटिफिकेशन पर क्लिक करने पर सही पेज पर रीडायरेक्ट करना या फोकस करना
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const targetUrl = event.notification.data?.url || "/Meet.Me/GtoA.html";
+    const targetUrl = event.notification.data?.url || "./GtoA.html";
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (let client of windowClients) {
-                if (client.url === targetUrl && 'focus' in client) {
+                if (client.url.includes(targetUrl.replace('./', '')) && 'focus' in client) {
                     return client.focus();
                 }
             }
